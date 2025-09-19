@@ -36,5 +36,8 @@ A web application that enables clients to book electric bike rides and riders to
 - Use semantic search and context-aware prompts to quickly locate, refactor, or extend features based on project structure.
 - Integrate AI-driven code review to catch bugs, suggest improvements, and ensure best practices.
 
+
+
+
 ---
 This project plan will guide development, leveraging AI tools for speed, quality, and maintainability.
