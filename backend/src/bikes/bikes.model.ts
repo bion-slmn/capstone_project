@@ -22,6 +22,13 @@ export class Bike extends Model {
     @Column(DataType.BOOLEAN)
     declare isAvailable: boolean;
 
+    @ForeignKey(() => Rider)
+    @Column({
+        type: DataType.UUID,
+        allowNull: true,
+    })
+    riderId: string;
+
 
     @BelongsTo(() => Rider)
     declare rider: Rider;

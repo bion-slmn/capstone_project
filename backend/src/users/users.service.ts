@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { Client } from './models';
 import { Rider } from './models';
+import { Model, ModelCtor } from 'sequelize-typescript';
 
 @Injectable()
 export class UsersService {
@@ -19,26 +20,7 @@ export class UsersService {
     ) { }
 
     /**
-     * Shared user creation logic for client and rider registration.
-     */
-    private async createUser<T extends User>(model: typeof User, dto: RegisterUserDto, role: string, extraFields: Record<string, any> = {}): Promise<T> {
-        try {
-            const { email, password, phoneNumber } = dto;
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const user = await model.create({
-                email,
-                password: hashedPassword,
-                role,
-                phoneNumber,
-                ...extraFields
-            });
-            this.logger.log(`${role.charAt(0).toUpperCase() + role.slice(1)} registered: ${email}`);
-            return user as T;
-        } catch (error) {
-            this.logger.error(`Error registering ${role}: ${dto.email}`, error.stack);
-            throw new InternalServerErrorException(`Failed to register ${role}`);
-        }
-    }
+
 
     /**
      * Finds a user by their unique ID.
@@ -66,16 +48,40 @@ export class UsersService {
      * Registers a new client user.
      * Hashes password before saving. Throws on error.
      */
-    async registerClient(registerUserDto: RegisterUserDto): Promise<Client> {
-        return this.createUser<Client>(Client, registerUserDto, 'client');
+    /**
+     * Shared logic for registering a user and linking a profile.
+     */
+    private async registerWithProfile<T extends Model>(
+        registerUserDto: RegisterUserDto,
+        role: string, profileModel: ModelCtor<T>,
+        profileFields: Record<string, any> = {}): Promise<T> {
+        try {
+            const { email, password, phoneNumber } = registerUserDto;
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const user = await User.create({
+                email,
+                password: hashedPassword,
+                role,
+                phoneNumber
+            });
+            const profile = await profileModel.create({
+                userId: user.id,
+                ...profileFields
+            } as any);
+            this.logger.log(`${role.charAt(0).toUpperCase() + role.slice(1)} registered: ${email}`);
+            return profile as T;
+        } catch (error) {
+            this.logger.error(`Error registering ${role}: ${registerUserDto.email}`, error.stack);
+            throw new InternalServerErrorException(`Failed to register ${role}`);
+        }
     }
 
-    /**
-     * Registers a new rider user.
-     * Hashes password before saving. Throws on error.
-     */
+    async registerClient(registerUserDto: RegisterUserDto): Promise<Client> {
+        return this.registerWithProfile<Client>(registerUserDto, 'client', Client, { loyaltyPoints: 0 });
+    }
+
     async registerRider(registerUserDto: RegisterUserDto, licenseNumber: string): Promise<Rider> {
-        return this.createUser<Rider>(Rider, registerUserDto, 'rider', { licenseNumber });
+        return this.registerWithProfile<Rider>(registerUserDto, 'rider', Rider, { licenseNumber, rating: 0 });
     }
 
     /**
