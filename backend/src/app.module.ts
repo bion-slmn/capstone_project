@@ -12,6 +12,11 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BikesController } from './bikes/bikes.controller';
 import { BikesModule } from './bikes/bikes.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { User } from './users/models/user.model';
+import { Client, Rider } from './users/models';
+import { Bike } from './bikes/bikes.model';
+import { Booking } from './bookings/booking.model';
 
 
 @Module({
@@ -26,14 +31,14 @@ import { BikesModule } from './bikes/bikes.module';
         username: configService.get<string>('DB_USER'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        autoLoadModels: true,
-        synchronize: true, // Set to false in production!
+        autoLoadModels: true, // Set to false in production!
       }),
       inject: [ConfigService],
     }),
     AuthModule,
     UsersModule,
     BikesModule,
+    BookingsModule,
   ],
   controllers: [AppController, BikesController],
   providers: [

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Bike } from './bikes.model';
 import { CreateBikeDto } from './dto/create-bike.dto';
 import { UpdateBikeDto } from './dto/update-bike.dto';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class BikesService {
@@ -11,11 +12,13 @@ export class BikesService {
     constructor(
         @InjectModel(Bike)
         private bikeModel: typeof Bike,
+        private usersService: UsersService,
     ) { }
 
-    async createBike(data: CreateBikeDto): Promise<Bike> {
+    async createBike(data: CreateBikeDto, userId: string): Promise<Bike> {
         try {
-            const bike = await this.bikeModel.create(data as any);
+            const rider = await this.usersService.getRiderProfileByUserId(userId);
+            const bike = await this.bikeModel.create({ ...data, riderId: rider.id });
             this.logger.log(`Bike created: ${bike.id}`);
             return bike;
         } catch (error) {

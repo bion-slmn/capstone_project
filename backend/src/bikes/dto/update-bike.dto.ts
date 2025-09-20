@@ -22,10 +22,6 @@ export class UpdateBikeDto {
     isAvailable?: boolean;
 
     @IsOptional()
-    @IsNumber()
-    pricePerMinute?: number;
-
-    @IsOptional()
     @IsDate()
     lastServiceDate?: Date;
 

@@ -2,9 +2,9 @@ import { Table, Model, Column, DataType, ForeignKey, BelongsTo } from 'sequelize
 import { Rider } from '../users/models';
 
 
-@Table
+@Table({ tableName: 'bikes' })
 export class Bike extends Model {
-    @Column({ type: DataType.STRING, primaryKey: true })
+    @Column({ type: DataType.UUID, primaryKey: true, defaultValue: DataType.UUIDV4 })
     declare id: string;
 
     @Column(DataType.STRING)

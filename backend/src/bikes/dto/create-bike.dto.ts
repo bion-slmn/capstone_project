@@ -16,8 +16,6 @@ export class CreateBikeDto {
     @IsBoolean()
     isAvailable: boolean;
 
-    @IsNumber()
-    pricePerMinute: number;
 
     @IsOptional()
     @IsDate()

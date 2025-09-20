@@ -1,8 +1,8 @@
-import { Controller, Post, Body, Patch, Param, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get, UseGuards, Request, Query, Delete } from '@nestjs/common';
 import { BikesService } from './bikes.service';
 import { Bike } from './bikes.model';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RiderRoleGuard } from '../auth/rider-role.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RiderRoleGuard } from '../auth/guards/rider-role.guard';
 import { CreateBikeDto } from './dto/create-bike.dto';
 import { UpdateBikeDto } from './dto/update-bike.dto';
 
@@ -14,30 +14,31 @@ export class BikesController {
     @UseGuards(RiderRoleGuard)
     @Post()
     async createBike(@Body() data: CreateBikeDto, @Request() req): Promise<Bike> {
-        return this.bikesService.createBike(data);
+        const userId = req.user.userId;
+        return this.bikesService.createBike(data, userId);
     }
 
-    @Get(':id')
-    async getBikeById(@Param('id') id: string): Promise<Bike> {
-        return this.bikesService.getBikeById(id);
-    }
-
-    @UseGuards(RiderRoleGuard)
-    @Get()
-    async getBikesByRider(@Request() req): Promise<Bike[]> {
-        return this.bikesService.getBikeByRiderId(req.user.id);
+    @Get('byId')
+    async getBikeById(@Query('bikeId') bikeId: string): Promise<Bike> {
+        return this.bikesService.getBikeById(bikeId);
     }
 
     @UseGuards(RiderRoleGuard)
-    @Patch(':id')
-    async updateBike(@Param('id') id: string, @Body() data: UpdateBikeDto, @Request() req): Promise<Bike> {
-        return this.bikesService.updateBike(id, data);
+    @Get('byriderId')
+    async getBikesByRider(@Query('riderId') riderId: string): Promise<Bike[]> {
+        return this.bikesService.getBikeByRiderId(riderId);
     }
 
     @UseGuards(RiderRoleGuard)
-    @Post(':id/delete')
-    async deleteBike(@Param('id') id: string, @Request() req): Promise<void> {
-        await this.bikesService.deleteBike(id);
+    @Patch('update/:bikeId')
+    async updateBike(@Param('bikeId') bikeId: string, @Body() data: UpdateBikeDto, @Request() req): Promise<Bike> {
+        return this.bikesService.updateBike(bikeId, data);
+    }
+
+    @UseGuards(RiderRoleGuard)
+    @Delete('delete/:bikeId')
+    async deleteBike(@Param('bikeId') bikeId: string, @Request() req): Promise<void> {
+        await this.bikesService.deleteBike(bikeId);
     }
 
     @Get('availability/:isAvailable')

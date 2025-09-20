@@ -1,12 +1,10 @@
 
 
-import { Injectable, Logger, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { User } from './models/user.model';
+import { User, Rider, Client } from './models';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { Client } from './models';
-import { Rider } from './models';
 import { Model, ModelCtor } from 'sequelize-typescript';
 
 @Injectable()
@@ -17,6 +15,11 @@ export class UsersService {
     constructor(
         @InjectModel(User)
         private userModel: typeof User,
+        @InjectModel(Rider)
+        private riderModel: typeof Rider,
+        @InjectModel(Client)
+        private clientModel: typeof Client,
+
     ) { }
 
     /**
@@ -37,8 +40,7 @@ export class UsersService {
             }
             return user;
         } catch (error) {
-            this.logger.error(`Error finding user by id: ${id}`, error.stack);
-            throw new InternalServerErrorException('Failed to find user');
+            this.handleError(`finding user by id ${id}`, error);
         }
     }
 
@@ -51,10 +53,15 @@ export class UsersService {
     /**
      * Shared logic for registering a user and linking a profile.
      */
+    /**
+     * Registers a user and links a profile (Client or Rider).
+     */
     private async registerWithProfile<T extends Model>(
         registerUserDto: RegisterUserDto,
-        role: string, profileModel: ModelCtor<T>,
-        profileFields: Record<string, any> = {}): Promise<T> {
+        role: string,
+        profileModel: ModelCtor<T>,
+        profileFields: Record<string, any> = {}
+    ): Promise<T> {
         try {
             const { email, password, phoneNumber } = registerUserDto;
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -64,26 +71,45 @@ export class UsersService {
                 role,
                 phoneNumber
             });
+            this.logger.log(`User created: ${user.id}, ${user.email}, ${user.role}`);
+
             const profile = await profileModel.create({
                 userId: user.id,
                 ...profileFields
             } as any);
-            this.logger.log(`${role.charAt(0).toUpperCase() + role.slice(1)} registered: ${email}`);
+            this.logger.log(`${role.charAt(0).toUpperCase() + role.slice(1)} profile created: ${profile.id}`);
             return profile as T;
         } catch (error) {
-            this.logger.error(`Error registering ${role}: ${registerUserDto.email}`, error.stack);
-            throw new InternalServerErrorException(`Failed to register ${role}`);
+            this.handleError(`registering ${role} (${registerUserDto.email})`, error);
         }
     }
 
+    /**
+     * Registers a new client user.
+     */
     async registerClient(registerUserDto: RegisterUserDto): Promise<Client> {
-        return this.registerWithProfile<Client>(registerUserDto, 'client', Client, { loyaltyPoints: 0 });
+        const role = 'client';
+        if (registerUserDto.role && registerUserDto.role !== role) {
+            throw new BadRequestException(`Invalid role for client registration: ${registerUserDto.role}`);
+        }
+        return this.registerWithProfile<Client>(registerUserDto, role, this.clientModel, { loyaltyPoints: 0 });
     }
 
+    /**
+     * Registers a new rider user.
+     */
     async registerRider(registerUserDto: RegisterUserDto, licenseNumber: string): Promise<Rider> {
-        return this.registerWithProfile<Rider>(registerUserDto, 'rider', Rider, { licenseNumber, rating: 0 });
+        const role = 'rider';
+        if (registerUserDto.role && registerUserDto.role !== role) {
+            throw new BadRequestException(`Invalid role for rider registration: ${registerUserDto.role}`);
+        }
+        return this.registerWithProfile<Rider>(registerUserDto, role, this.riderModel, { licenseNumber, rating: 0 });
     }
 
+    /**
+     * Authenticates a user by email and password.
+     * Returns user data (without password) if valid, throws otherwise.
+     */
     /**
      * Authenticates a user by email and password.
      * Returns user data (without password) if valid, throws otherwise.
@@ -105,10 +131,47 @@ export class UsersService {
             const { password: userPassword, ...safeUser } = user.toJSON();
             return safeUser;
         } catch (error) {
-            this.logger.error(`Error logging in user: ${email}`, error.stack);
-            throw error instanceof NotFoundException || error instanceof UnauthorizedException
-                ? error
-                : new InternalServerErrorException('Failed to login user');
+            this.handleError(`logging in user ${email}`, error);
         }
+    }
+
+    /**
+     * Finds a rider profile by userId.
+     */
+    async getRiderProfileByUserId(userId: string): Promise<Rider> {
+        try {
+            const rider = await this.riderModel.findOne({ where: { userId } });
+            if (!rider) {
+                this.logger.warn(`Rider profile not found for userId: ${userId}`);
+                throw new NotFoundException('Rider profile not found');
+            }
+            return rider;
+        } catch (error) {
+            this.handleError(`fetching rider profile for userId ${userId}`, error);
+        }
+    }
+
+    /**
+     * Finds a client profile by userId.
+     */
+    async getClientProfileByUserId(userId: string): Promise<Client> {
+        try {
+            const client = await this.clientModel.findOne({ where: { userId } });
+            if (!client) {
+                this.logger.warn(`Client profile not found for userId: ${userId}`);
+                throw new NotFoundException('Client profile not found');
+            }
+            return client;
+        } catch (error) {
+            this.handleError(`fetching client profile for userId ${userId}`, error);
+        }
+    }
+
+    /**
+     * Centralized error handler for service methods
+     */
+    private handleError(action: string, error: any): never {
+        this.logger.error(`Error ${action}: ${error.message}`, error.stack);
+        throw new InternalServerErrorException(`Failed to ${action}`);
     }
 }

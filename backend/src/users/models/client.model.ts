@@ -4,18 +4,25 @@ import { User } from './user.model';
 @Table({ tableName: 'clients' })
 export class Client extends Model {
     // Add client-specific fields here
+    @Column({
+        type: DataType.UUID,
+        primaryKey: true,
+        defaultValue: DataType.UUIDV4,
+    })
+    declare id: string;
+
     @Column(DataType.INTEGER)
-    loyaltyPoints?: number;
+    declare loyaltyPoints?: number;
 
     @ForeignKey(() => User)
     @Column({
         type: DataType.UUID,
         allowNull: false,
     })
-    userId: string;
+    declare userId: string;
 
     @BelongsTo(() => User)
-    user: User;
+    declare user: User;
 
     // ForeignKey to User is implicit via inheritance
 }

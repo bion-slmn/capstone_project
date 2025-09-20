@@ -1,6 +1,7 @@
 import { Injectable, Logger, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Booking } from './booking.model';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class BookingsService {
@@ -9,10 +10,13 @@ export class BookingsService {
     constructor(
         @InjectModel(Booking)
         private bookingModel: typeof Booking,
+        private usersService: UsersService,
     ) { }
 
-    async createBooking(data: Partial<Booking>): Promise<Booking> {
+    async createBooking(data: Partial<Booking>, userId): Promise<Booking> {
         try {
+            const client = await this.usersService.getClientProfileByUserId(userId);
+            data.clientId = client.id;
             const booking = await this.bookingModel.create(data);
             this.logger.log(`Booking created: ${booking.id}`);
             return booking;

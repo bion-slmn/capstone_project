@@ -2,8 +2,11 @@ import { Controller, Post, Body, Patch, Param, Get, BadRequestException, UseGuar
 import { BookingsService } from './bookings.service';
 import { Booking } from './booking.model';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { ClientRoleGuard } from '../auth/client-role.guard';
+import { ClientRoleGuard } from '../auth/guards/client-role.guard';
+import { JwtAuthGuard } from 'src/auth/guards';
 
+
+@UseGuards(JwtAuthGuard)
 @Controller('bookings')
 export class BookingsController {
     constructor(private readonly bookingsService: BookingsService) { }
@@ -13,11 +16,12 @@ export class BookingsController {
     async createBooking(@Body() createBookingDto: CreateBookingDto, @Request() req): Promise<Booking> {
         const bookingData = {
             ...createBookingDto,
-            clientId: req.user.id,
             startTime: new Date(createBookingDto.startTime),
             endTime: createBookingDto.endTime ? new Date(createBookingDto.endTime) : undefined
         };
-        return this.bookingsService.createBooking(bookingData);
+
+        const userId = req.user.userId;
+        return this.bookingsService.createBooking(bookingData, userId);
     }
 
     @UseGuards(ClientRoleGuard)

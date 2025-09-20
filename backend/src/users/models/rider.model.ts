@@ -3,20 +3,28 @@ import { User } from './user.model';
 
 @Table({ tableName: 'riders' })
 export class Rider extends Model {
+    @Column({
+        type: DataType.UUID,
+        primaryKey: true,
+        defaultValue: DataType.UUIDV4,
+    })
+    declare id: string;
+
+
     @ForeignKey(() => User)
     @Column({
         type: DataType.UUID,
         allowNull: false,
     })
-    userId: string;
+    declare userId: string;
 
     @BelongsTo(() => User)
     user: User;
 
     @Column(DataType.STRING)
-    licenseNumber?: string;
+    declare licenseNumber?: string;
 
     @Column(DataType.INTEGER)
-    rating?: number;
+    declare rating?: number;
 }
 

@@ -23,7 +23,7 @@ export class Booking extends Model {
     declare rider: Rider;
 
     @ForeignKey(() => Bike)
-    @Column({ type: DataType.STRING, allowNull: false })
+    @Column({ type: DataType.UUID, allowNull: false })
     declare bikeId: string;
 
     @BelongsTo(() => Bike)
