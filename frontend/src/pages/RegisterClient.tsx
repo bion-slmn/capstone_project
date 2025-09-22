@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import FormField from "@/components/FormField";
 import { registerClient } from "@/api";
@@ -34,22 +34,33 @@ export default function RegisterClient() {
         const validationErrors = validate();
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
-            toast.error("Please fix the errors in the form.");
+            toast.error("🚨 Please fix the errors in the form!");
             return;
         }
         setLoading(true);
         try {
-            const res = await registerClient({
-                email: form.email,
-                password: form.password,
-                phoneNumber: form.phoneNumber,
-                loyaltyPoints: form.loyaltyPoints ? Number(form.loyaltyPoints) : undefined
-            });
-            if (res.status < 200 || res.status >= 300) throw new Error("Registration failed");
-            toast.success("Registration successful!");
-            setForm({ email: "", password: "", phoneNumber: "", loyaltyPoints: "" });
-        } catch (err: any) {
-            toast.error(err.message || "Error");
+            await toast.promise(
+                registerClient({
+                    email: form.email,
+                    password: form.password,
+                    phoneNumber: form.phoneNumber,
+                    loyaltyPoints: form.loyaltyPoints ? Number(form.loyaltyPoints) : undefined
+                }),
+                {
+                    loading: "📝 Registering you...",
+                    success: () => {
+                        setForm({ email: "", password: "", phoneNumber: "", loyaltyPoints: "" });
+                        return "✅ Registration successful! Welcome aboard!";
+                    },
+                    error: (err) => `❌ ${err.message || "Registration failed. Please try again!"}`,
+                },
+                {
+                    style: {
+                        minWidth: '250px',
+                        fontSize: '1rem',
+                    },
+                }
+            );
         } finally {
             setLoading(false);
         }

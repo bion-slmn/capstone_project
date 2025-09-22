@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import toast from 'react-hot-toast';
 import { Loader2 } from "lucide-react";
 import FormField from "@/components/FormField";
 import { login } from "@/api";
@@ -34,17 +34,25 @@ export default function Login() {
         const validationErrors = validate();
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
-            toast.error("Please fix the errors in the form.");
+            toast.error("🚨 Please fix the errors in the form!");
             return;
         }
         setLoading(true);
         try {
-            await login(form.email, form.password);
-
-            toast.success("Login successful!");
-            // TODO: Store tokens, redirect, etc.
-        } catch (err: any) {
-            toast.error(err.message || "Error");
+            await toast.promise(
+                login(form.email, form.password),
+                {
+                    loading: "🔐 Logging you in...",
+                    success: "✅ Welcome back! You are logged in 😊",
+                    error: (err) => `❌ ${err.message || "Login failed. Please try again!"}`,
+                },
+                {
+                    style: {
+                        minWidth: '250px',
+                        fontSize: '1rem',
+                    },
+                }
+            );
         } finally {
             setLoading(false);
         }

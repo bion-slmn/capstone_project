@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import FormField from "@/components/FormField";
 import { registerRider } from "@/api";
 
@@ -28,26 +28,39 @@ export default function RegisterRider() {
         setError("");
         setSuccess("");
         try {
-            const res = await registerRider({
-                email: form.email,
-                password: form.password,
-                phoneNumber: form.phoneNumber,
-                licenseNumber: form.licenseNumber || undefined,
-                rating: form.rating ? Number(form.rating) : undefined,
-            });
-            if (res.status < 200 || res.status >= 300) throw new Error("Registration failed");
-            setSuccess("Registration successful!");
-            toast.success("Registration successful!");
-            setForm({
-                email: "",
-                password: "",
-                phoneNumber: "",
-                licenseNumber: "",
-                rating: "",
-            });
-        } catch (err: any) {
-            setError(err.message || "Error");
-            toast.error(err);
+            await toast.promise(
+                registerRider({
+                    email: form.email,
+                    password: form.password,
+                    phoneNumber: form.phoneNumber,
+                    licenseNumber: form.licenseNumber || undefined,
+                    rating: form.rating ? Number(form.rating) : undefined,
+                }),
+                {
+                    loading: "📝 Registering you as a rider...",
+                    success: () => {
+                        setSuccess("Registration successful!");
+                        setForm({
+                            email: "",
+                            password: "",
+                            phoneNumber: "",
+                            licenseNumber: "",
+                            rating: "",
+                        });
+                        return "✅ Registration successful! Welcome to the team!";
+                    },
+                    error: (err) => {
+                        setError(err.message || "Error");
+                        return `❌ ${err.message || "Registration failed. Please try again!"}`;
+                    },
+                },
+                {
+                    style: {
+                        minWidth: '250px',
+                        fontSize: '1rem',
+                    },
+                }
+            );
         } finally {
             setLoading(false);
         }
