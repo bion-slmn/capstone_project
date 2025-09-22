@@ -16,8 +16,10 @@ export class UsersController {
 
 
     @Post('register-rider')
-    async registerRider(@Body() registerUserDto: RegisterUserDto, @Body('licenseNumber') licenseNumber: string) {
+    async registerRider(@Body() body: any) {
+        const { licenseNumber, ...registerUserDto } = body;
         this.logger.log(`Registering rider: ${registerUserDto.email}`);
         return this.usersService.registerRider(registerUserDto, licenseNumber);
     }
+
 }

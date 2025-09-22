@@ -5,6 +5,12 @@ import { Sequelize } from 'sequelize-typescript';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Enable CORS for frontend with credentials
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  });
+
   // Get the Sequelize instance provided by @nestjs/sequelize
   const sequelize = app.get(Sequelize);
 
